@@ -17,127 +17,415 @@ import org.testng.annotations.Test;
 
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import static org.junit.Assert.assertTrue;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
 
 public class analyticsengine {
-	 private RemoteWebDriver driver;
+	private RemoteWebDriver driver;
 
-	    @BeforeTest
-	    public void setup() throws MalformedURLException {
-	        ChromeOptions options = new ChromeOptions();
-	        URL url = new URL("http://172.20.23.92:4444/wd/hub");
-	        driver = new RemoteWebDriver(url, options);
-	        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-	    }
-
-	    @Test(priority = 1)
-	    public void login() throws InterruptedException {
-	        driver.get("http://apollo2.humanbrain.in/");
-	        driver.manage().window().maximize();
-	        System.out.println("The server is opened successfully");
-
-	        WebDriverWait wait = new WebDriverWait(driver, 50);
-	        try {
-	            // Viewer Section
-	            WebElement viewerSectionLink = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//img[@src='/viewer/assets/images/colorsvg/gallery.svg']")));
-	            viewerSectionLink.click();
-	            System.out.println("The Viewer Icon is clicked");
-
-	            // Login
-	            String parentWindow = driver.getWindowHandle();
-	            WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[text()=' Log In ']")));
-	            loginButton.click();
-
-	            Set<String> allWindows = driver.getWindowHandles();
-	            for (String window : allWindows) {
-	                if (!window.equals(parentWindow)) {
-	                    driver.switchTo().window(window);
-	                    break;
-	                }
-	            }
-
-	            // Enter Credentials
-	            WebElement emailInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//input[@type='email']")));
-	            emailInput.sendKeys("softwaretestingteam9@gmail.com");
-
-	            WebElement nextButton = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//span[text()='Next']")));
-	            nextButton.click();
-
-	            WebElement passwordInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//input[@type='password']")));
-	            passwordInput.sendKeys("Health#123");
-
-	            WebElement nextButton2 = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//span[text()='Next']")));
-	            nextButton2.click();
-
-	            driver.switchTo().window(parentWindow);
-	            Thread.sleep(5000);
-	        } catch (Exception e) {
-	            System.err.println("An error occurred during login: " + e.getMessage());
-	        }
-	    }
-
-	    @Test(priority = 2)
-	    public void analyticsEngine() throws InterruptedException {
-	    	try {
-	    	    WebDriverWait wait = new WebDriverWait(driver, 30);
-
-	    	    // Click Analytics Engine
-	    	    WebElement analyticsIcon = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//img[@src='/viewer/assets/images/colorsvg/analytics_engine.svg']")));
-	    	    analyticsIcon.click();
-	    	    System.out.println("Analytics Engine icon clicked successfully.");
-
-	    	    // Call saveSearchHistory API
-	    	    System.out.println("Calling saveSearchHistory API...");
-	    	    Response saveSearchResponse = RestAssured.given()
-	    	        .post("https://apollo2.humanbrain.in/analytics/saveSearchHistory");
-	    	    System.out.println("saveSearchHistory API Response: " + saveSearchResponse.getStatusCode() + " - " + saveSearchResponse.getBody().asString());
-
-	    	    // Enter Query
-	    	    WebElement searchBox = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//input[@type='text']")));
-	    	    searchBox.sendKeys("greater than 10\n");
-	    	    Thread.sleep(5000);
-	    	    System.out.println("The Query is entered successfully");
-
-	    	    // Call db_query API
-	    	    System.out.println("Calling db_query API...");
-	    	    Response dbQueryResponse = RestAssured.given()
-	    	        .queryParam("query", "greater than 10")
-	    	        .get("https://apollo2.humanbrain.in/analyticsengine/db_query");
-	    	    System.out.println("db_query API Response: " + dbQueryResponse.getStatusCode() + " - " + dbQueryResponse.getBody().asString());
-
-	    	    // Validate Text 'Fetal brain 34'
-	    	    WebElement resultTextElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("(//td[text()='Fetal brain 34'])[1]")));
-	    	    String actualText = resultTextElement.getText();
-	    	    String expectedText = "Fetal brain 34";
-
-	    	    if (!actualText.equals(expectedText)) {
-	    	        throw new AssertionError("Validation failed! Expected text: '" + expectedText + "', but found: '" + actualText + "'");
-	    	    }
-	    	    System.out.println("Validation passed: 'Fetal brain 34' text is displayed correctly.");
-
-	    	    // Download Button
-	    	    WebDriverWait wait3 = new WebDriverWait(driver, 60);
-	    	    WebElement download = wait3.until(ExpectedConditions.elementToBeClickable(By.xpath("(//img[@src='/viewer/assets/images/colorsvg/download.svg'])[1]")));
-	    	    download.click();
-	    	    System.out.println("Download button clicked successfully.");
-
-	    	    // Call getSearchHistory API
-	    	    System.out.println("Calling getSearchHistory API...");
-	    	    Response searchHistoryResponse = RestAssured.given()
-	    	        .queryParam("user_id", "193")
-	    	        .get("https://apollo2.humanbrain.in/analytics/getSearchHistory");
-	    	    System.out.println("getSearchHistory API Response: " + searchHistoryResponse.getStatusCode() + " - " + searchHistoryResponse.getBody().asString());
-
-	    	} catch (AssertionError e) {
-	    	    System.err.println("Test case failed: " + e.getMessage());
-	    	    throw e; // Rethrow the assertion error to mark the test as failed
-	    	} catch (Exception e) {
-	    	    System.err.println("An error occurred in AnalyticsEngine test: " + e.getMessage());
-	    	}}
-	    @AfterTest
-	    public void tearDown() {
-	        if (driver != null) {
-	            driver.quit();
-	            System.out.println("Browser closed successfully");
-	        }
-	    }
+	@BeforeTest
+	public void setup() throws MalformedURLException {
+		DesiredCapabilities dc = DesiredCapabilities.chrome();
+		URL url = new URL("http://172.20.23.92:4443/wd/hub");
+		driver = new RemoteWebDriver(url, dc);
 	}
+
+	@Test(priority = 1)
+	public void Login() throws InterruptedException {
+		driver.get("http://apollo2.humanbrain.in/");
+		driver.manage().window().maximize();
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The server is Opened sucessfully");
+		WebDriverWait wait = new WebDriverWait(driver, 50);
+		WebElement viewerSectionLink = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//img[@src='/viewer/assets/images/colorsvg/gallery.svg']")));
+		viewerSectionLink.click();
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The Viewer Icon is clicked");
+		String parentWindow = driver.getWindowHandle();
+		WebDriverWait wait1 = new WebDriverWait(driver, 20);
+		WebElement login = wait1
+				.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[text()=' Log In ']")));
+		login.click();
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The login Button is clicked");
+		Thread.sleep(4000);
+		Set<String> allWindows = driver.getWindowHandles();
+		for (String window : allWindows) {
+			if (!window.equals(parentWindow)) {
+				driver.switchTo().window(window);
+				break;
+			}
+		}
+		Thread.sleep(4000);
+		WebDriverWait wait2 = new WebDriverWait(driver, 20);
+		WebElement emailInput = wait2
+				.until(ExpectedConditions.elementToBeClickable(By.xpath("//input[@type='email']")));
+		emailInput.sendKeys("softwaretestingteam9@gmail.com");
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("Mail I'd is entered");
+		WebDriverWait wait3 = new WebDriverWait(driver, 20);
+		WebElement Next = wait3.until(ExpectedConditions.elementToBeClickable(By.xpath("//span[text()='Next']")));
+		Next.click();
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The Next Button is clicked");
+		WebDriverWait wait4 = new WebDriverWait(driver, 20);
+		System.out.println("--------------------------*****************-----------------------");
+		WebElement PasswordInput = wait4
+				.until(ExpectedConditions.elementToBeClickable(By.xpath("//input[@type='password']")));
+		PasswordInput.sendKeys("Health#123");
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("Password is entered");
+		WebDriverWait wait5 = new WebDriverWait(driver, 20);
+		WebElement Next2 = wait5.until(ExpectedConditions.elementToBeClickable(By.xpath("//span[text()='Next']")));
+		Next2.click();
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The Next Button is clicked");
+		Thread.sleep(5000);
+		driver.switchTo().window(parentWindow);
+		Thread.sleep(5000);
+	}
+	@Test(priority = 2)
+	public void table() throws InterruptedException {
+		String parentWindow = driver.getWindowHandle();
+		try {
+			WebDriverWait wait6 = new WebDriverWait(driver, 30);
+			WebElement table1 = wait6
+					.until(ExpectedConditions.elementToBeClickable(By.xpath("//input[@placeholder='Search tags']")));
+			table1.sendKeys("AuTest\n");
+			Thread.sleep(3000);
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("The number Entered Successfully");
+		} catch (Exception e) {
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("The number is not Entered successfully");
+		}
+		try {
+			WebDriverWait wait7 = new WebDriverWait(driver, 30);
+			WebElement table2 = wait7.until(ExpectedConditions.elementToBeClickable(By.xpath("//nb-icon[@nbtooltip='Atlas Editor']")));
+			table2.click();
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("The Altas Editor is clicked");
+		} catch (Exception e) {
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("The Atlas Editor is not clicked");
+		}
+		Thread.sleep(4000);
+		Set<String> allWindows = driver.getWindowHandles();
+		for (String window : allWindows) {
+			if (!window.equals(parentWindow)) {
+				driver.switchTo().window(window);
+				break;
+			}
+		}
+	}
+	@Test(priority = 3)
+	public void contributor() throws InterruptedException {
+		try {
+			WebDriverWait wait = new WebDriverWait(driver, 30);
+			WebElement gt = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//img[@src='/viewer/assets/images/colorsvg/oldmenu.svg']")));
+			gt.click();
+			Thread.sleep(3000);
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("Edit Menu selected Successfully");
+		} catch (Exception e) {
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("Edit Menu  is not selected");
+		}
+		try {
+			WebDriverWait wait6 = new WebDriverWait(driver, 30);
+			WebElement contri = wait6.until(ExpectedConditions.elementToBeClickable(By.xpath(" //nb-accordion-item-header[text()='Contributors']")));
+			contri.click();
+			Thread.sleep(3000);
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("Our contributor selected Successfully");
+		} catch (Exception e) {
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("Our Contributor   is not selected");
+		}
+	try {
+		WebDriverWait wait6 = new WebDriverWait(driver, 30);
+		WebElement radio = wait6.until(ExpectedConditions.elementToBeClickable(By.xpath("(//input[@type='radio'])[2]")));
+		radio.click();
+		Thread.sleep(3000);
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The software Team contributor is selected Successfully");
+	} catch (Exception e) {
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The software Team contributor is  not selected");
+	}
+	
+	try {
+		WebDriverWait wait = new WebDriverWait(driver, 30);
+		WebElement draw = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//img[@src='/viewer/assets/images/colorsvg/paintbrush.svg']")));
+		draw.click();
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The draw menu button is clicked");
+	} catch (Exception e) {
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The draw menu button is not clicked");
+	}  
+		try {
+			WebDriverWait wait = new WebDriverWait(driver, 50);
+
+			// Click on the annotation icon
+			WebElement ww = wait.until(ExpectedConditions
+					.visibilityOfElementLocated(By.xpath("//button[text()='Unlock']")));
+			ww.click();
+
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("The Unlock button is selected");
+
+		} catch (Exception e) {
+			System.out.println("The Unlock button is not selected");
+		}
+		try {
+			WebDriverWait wait = new WebDriverWait(driver, 50);
+
+			// Click on the annotation icon
+			WebElement WorkArea = wait.until(ExpectedConditions
+					.visibilityOfElementLocated(By.xpath("//nb-accordion-item-header[text()=' Work Area ']")));
+			WorkArea.click();
+
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("The WorkArea Option is selected");
+
+		} catch (Exception e) {
+			System.out.println("The WorkArea Option is not selected");
+		}
+		try {
+			WebDriverWait wait = new WebDriverWait(driver, 50);
+
+			// Click on the annotation icon
+			WebElement Select = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//select[@id='select2']")));
+			Select.click();
+
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("The Select Option is selected");
+
+		} catch (Exception e) {
+			System.out.println("The Select Option is not selected");
+		}
+		try {
+			WebDriverWait wait = new WebDriverWait(driver, 50);
+
+			// Click on the annotation icon
+			WebElement section = wait.until(ExpectedConditions
+					.visibilityOfElementLocated(By.xpath("//option[text()=' 142 ']")));
+			section.click();
+
+			System.out.println("--------------------------*****************-----------------------");
+			System.out.println("The Section Number is selected");
+
+		} catch (Exception e) {
+			System.out.println("The Section Number is not selected");
+		}
+	
+	try {
+		WebDriverWait wait = new WebDriverWait(driver, 50);
+
+		// Click on the annotation icon
+		WebElement ContriSelect = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//select[@id='contributor-select']")));
+		ContriSelect.click();
+
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The Contributor Select Option is selected");
+
+	} catch (Exception e) {
+		System.out.println("The Contributor Option is not selected");
+	}
+	try {
+		WebDriverWait wait = new WebDriverWait(driver, 50);
+
+		// Click on the annotation icon
+		WebElement section = wait.until(ExpectedConditions
+				.visibilityOfElementLocated(By.xpath("//option[text()=' Base Atlas ']")));
+		section.click();
+
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The BaseAtlas is selected");
+
+	} catch (Exception e) {
+		System.out.println("The BaseAtlas is not selected");
+	}
+	try {
+		WebDriverWait wait = new WebDriverWait(driver, 50);
+
+		// Click on the annotation icon
+		WebElement CheckBox = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("(//span[@class='custom-checkbox'])[1]")));
+		CheckBox.click();
+
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The CheckBox is Clicked");
+
+	} catch (Exception e) {
+		System.out.println("The CheckBox is not Clicked");
+	}
+	try {
+	    WebDriverWait wait = new WebDriverWait(driver, 50);
+
+	    // Click on the annotation icon
+	    WebElement copyButton = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[text()='Copy GeoJson']")));
+	    Thread.sleep(3000);
+	    copyButton.click();
+	    Thread.sleep(3000);
+	    System.out.println("--------------------------*****************-----------------------");
+	    System.out.println("The CopyButton is Clicked");
+
+	    // Make API call
+	    String apiUrl = "https://apollo2.humanbrain.in/imaging_service/i2iregdev"; // API URL
+	    URL url = new URL(apiUrl);
+	    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	    connection.setRequestMethod("GET");  // or POST based on the API method
+	    
+	    // Set headers if necessary
+	    connection.setRequestProperty("Content-Type", "application/json");
+	    
+	    int responseCode = connection.getResponseCode();
+	    if (responseCode == HttpURLConnection.HTTP_OK) { // 200
+	        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+	        String inputLine;
+	        StringBuffer response = new StringBuffer();
+	        while ((inputLine = in.readLine()) != null) {
+	            response.append(inputLine);
+	        }
+	        in.close();
+	        System.out.println("API Response: " + response.toString());
+	    } else if (responseCode == HttpURLConnection.HTTP_FORBIDDEN) { // 403
+	        System.out.println("API Request failed with 403 Forbidden. Test case will fail.");
+	        throw new Exception("API Request failed with 403 Forbidden.");
+	    } else {
+	        System.out.println("API Request failed. Response Code: " + responseCode);
+	        throw new Exception("API Request failed with code: " + responseCode);
+	    }
+	} catch (TimeoutException e) {
+	    System.out.println("Timeout occurred: The CopyButton was not found.");
+	    e.printStackTrace();
+	} catch (IOException e) {
+	    System.out.println("API Request failed: " + e.getMessage());
+	    e.printStackTrace();
+	} catch (Exception e) {
+	    System.out.println("Test case failed: " + e.getMessage());
+	    e.printStackTrace();
+	}
+	try {
+		WebDriverWait wait = new WebDriverWait(driver, 50);
+
+		Thread.sleep(3000);
+		WebElement annotation = wait.until(ExpectedConditions
+				.visibilityOfElementLocated(By.xpath("//nb-accordion-item-header[text()='Annotation']")));
+		Thread.sleep(3000);
+		annotation.click();
+
+		System.out.println("-------------------------------------------------");
+		System.out.println("The annotation icon is clicked");
+
+	} catch (Exception e) {
+		System.out.println("The annotation icon is not clicked");
+	}
+	try {
+		Actions actions = new Actions(driver);
+		Thread.sleep(3000);
+		actions.keyDown(Keys.ALT).sendKeys("v").keyUp(Keys.ALT).build().perform();
+		Thread.sleep(3000);
+		System.out.println("-------------------------------------------------");
+		System.out.println("Action executed successfully!");
+
+	} catch (NoSuchElementException e) {
+		System.out.println("Element not found: " + e.getMessage());
+	} catch (Exception e) {
+		System.out.println("Error executing action: " + e.getMessage());
+	}
+	try {
+		WebDriverWait wait = new WebDriverWait(driver, 50);
+		WebElement search = wait
+				.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//input[@placeholder='Search']")));
+		search.sendKeys("brain");
+		Thread.sleep(3000);
+		System.out.println("-------------------------------------------------");
+		System.out.println("The search icon is clicked");
+	} catch (Exception e) {
+		System.out.println("The search icon is not clicked");
+	}
+	try {
+		WebDriverWait wait = new WebDriverWait(driver, 50);
+
+		// Click on the annotation icon
+		WebElement id = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[@id='1_anchor']")));
+		Thread.sleep(3000);
+		id.click();
+		Thread.sleep(3000);
+
+		System.out.println("--------------------------*****************-----------------------");
+		System.out.println("The Brain name has clicked");
+
+	} catch (Exception e) {
+		System.out.println("The Brain name has not clicked");
+	}}
+//	try {
+//		Actions actions = new Actions(driver);
+//		Thread.sleep(3000);
+//
+//		// Press p + V
+//		actions.keyDown(Keys.ALT).sendKeys("v").keyUp(Keys.ALT).build().perform();
+//		Thread.sleep(3000);
+//		System.out.println("-------------------------------------------------");
+//		System.out.println("Action executed successfully!");
+//
+//	} catch (NoSuchElementException e) {
+//		System.out.println("Element not found: " + e.getMessage());
+//	} catch (Exception e) {
+//		System.out.println("Error executing action: " + e.getMessage());
+//	}
+	@Test (priority=4)
+	public void vlaidate() throws Exception {
+	try {
+		WebDriverWait wait = new WebDriverWait(driver, 50);
+
+		// Click on the annotation icon
+		WebElement text = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//span[text()=' 1 : Brain-Br ']")));
+		Thread.sleep(3000);
+		 text.getText();
+		 Thread.sleep(3000);
+		 String t1 = text.getText();
+			String expectedText = "1 : Brain-Br";
+			Assert.assertEquals(t1, expectedText);
+			System.out.println("Assertion passed: " + t1 + " matches the expected value.");
+		} catch (AssertionError e) {
+			System.out.println("Assertion failed: " + e.getMessage());
+			// Re-throw the AssertionError
+			throw e;
+		} catch (Exception e) {
+			System.out.println("An error occurred: " + e.getMessage());
+			// Re-throw the Exception
+			throw e;
+		}
+	}
+	@AfterTest
+	public void tearDown() {
+		if (driver != null) {
+			driver.quit();
+		}
+	}
+}
